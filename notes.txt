@@ -1,0 +1,6 @@
+renders javascript on the page.
+
+sends request to docker to run javascrpt code and then we can parse the results.
+
+once docker is installed run this in powershell
+docker pull scrapinghub/splash
