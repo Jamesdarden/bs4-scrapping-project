@@ -14,62 +14,39 @@ file['count_value'] = int(0)
 
 def data_cleaning(x):
 
-    regex_caption = r'pc.?matic.*\d{3}.?\d{3}.?\d{4}|maticpc|pc.?matic.*\W{12}|pc.?matic.*number|support|tech'
-    regex_link = r"pc[\w_-]?matic|[\d]{3}\w?[\d|\W]{3}\w?[\d\W]{4}|support|number"
-    regex_link_exclude = r"review|bbb.org|amazon.com|pcpitstop.com|linkedin.com|pc\w?pitstop.com"
-    # regex_caption = r'(pc.?matic).*\d{3}.?\d{3}.?\d{4}|maticpc|pc.?matic.*\W{12}|pc.?matic.*number|support|tech'
-    # regex_link =r"(pc[\w_-]?matic)|[\d]{3}\w?[\d|\W]{3}\w?[\d\W]{4}|support|number"
-    # regex_link_exclude = r"review|bbb.org|amazon.com|pcpitstop.com|linkedin.com|pc\w?pitstop.com"
-    
-    x.count_value = int(0)
+    regex_caption = re.compile(r'pc.?matic.*\d{3}.?\d{3}.?\d{4}|maticpc|pc.?matic.*\W{12}|pc.?matic.*number|support|tech',re.I)
+    regex_link = re.compile(r'pc\[\w_-\]?matic|\d{3}\w?\d|\W{3}\w?\d\W{4}|support|number', re.I)
+    regex_link_exclude = re.compile(r"review|bbb.org|amazon.com|pcpitstop.com|linkedin.com|pc\w?pitstop.com", re.I)
+    count_value = 0
     
     #helper function evalute expression return length of matches
     def true_or_false (regex, row):
-        return len(re.findall(regex, row ,flags=re.I))
+        return len(re.findall(regex, row ))
     
-    
-    
-
     
     if x.link:
-        if re.compile(regex_link_exclude, x.link):
+        if regex_link_exclude.search(x.link):
         # if true_or_false(regex_link_exclude, x.link):
-            return int(x.count_value)
+            return 0
             
-        if num := true_or_false(regex_link, x.link):
+        elif num := true_or_false(regex_link, x.link):
         # if num := true_or_false(regex_link, x.link):
-            x.count_value = num
+            count_value +=  num
         
     if x.caption:
         if num := true_or_false(regex_caption, x.caption):
         # if num := true_or_false(regex_caption, x.link):
-            x.count_value + num
-    return x.count_value 
+            count_value += num
+    x.count_value = count_value 
+    return x.count_value
   
-    # for col in x:
-    #     if x.columns[col] == 'link':
-    #         if re.compile(regex_link_exclude, x['link'], flags=re.I):
-    #             x['count'] = None
-    #         elif re.compile(regex_link, x['link'], flags=re.I):
-    #             x['count'] +=1
-    #     if x.columns[col] == 'caption':
-    #         if re.compile(regex_caption, x['caption'], flags=re.I):
-    #             x['count'] += 1
-    #     else:
-    #         return -1
-    # for col in x.columns:
-    # if re.compile(regex_link_exclude, x['link'], flags=re.I):
-    #     return False
-    # elif re.compile(regex_link, x['link'], flags=re.I):
-    #     return True
-    # elif re.compile(regex_caption, x['caption'], flags=re.I):
-    #     return True
-    # else:
-    #     return False
-    
+   
  
-flagcount = file[file.apply(data_cleaning, axis=1)] #1 applyies to rows
+# flagcount = file['count_value'][file.apply(data_cleaning, axis=1)] #1 applyies to rows
+file['count_value'] = file.apply(data_cleaning, axis=1) #1 applyies to rows
 # # filtered_data = file['link'].filter(regex=regex_link).any(axis=1).to_string()
-print(type(flagcount))
-print(flagcount.head(), 'filtered data' )
+# print(type(flagcount))
+filtered_data = file[ file['count_value'] > 0 ]
+# print(filtered_data)
+filtered_data.to_csv("filtered_data.csv")
 # # print(len(file.index))
