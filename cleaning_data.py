@@ -1,12 +1,13 @@
+from this import d
 import pandas as pd
 import numpy as np
 import re
 import sys
 
-file = pd.read_csv('supportlinkdata.csv')
+# file = pd.read_csv('supportlinkdata.csv')
 # ['link', 'titleText', 'citeTag', 'caption']
 
-file['count_value'] = int(0)
+# file['shady_score'] = int(0)
 
 
 # print(file.dtypes)
@@ -14,39 +15,51 @@ file['count_value'] = int(0)
 
 def data_cleaning(x):
 
-    regex_caption = re.compile(r'pc.?matic.*\d{3}.?\d{3}.?\d{4}|maticpc|pc.?matic.*\W{12}|pc.?matic.*number|support|tech',re.I)
-    regex_link = re.compile(r'pc\[\w_-\]?matic|\d{3}\w?\d|\W{3}\w?\d\W{4}|support|number', re.I)
-    regex_link_exclude = re.compile(r"review|bbb.org|amazon.com|pcpitstop.com|linkedin.com|pc\w?pitstop.com", re.I)
-    count_value = 0
+    regex_caption = re.compile(r'pc.?matic.*\d{3}.?\d{3}.?\d{4}|maticpc|pc.?matic.*\W{12}|pc.?matic.*number|pc.?matic.*support|pc.?matic.*tech',re.I)
+    regex_link = re.compile(r'(pc[\w_-]?matic|\d{3}\w?\d|\W{3}\w?\d\W{4}).?support|[maticpc]{7}', re.I)
+    regex_link_exclude = re.compile(r"review|bbb\.org|amazon\.com|pcpitstop\.com|linkedin\.com|pc\w?pitstop\.com|askbobrankin\.com|microsoft\.com|www\.facebook\.com/.?pcmatic/|tenforums\.com|article|news|[-_]vs[-_]|play\.google\.com", re.I)
+    regex_titleText = re.compile(r"pc.?matic.*\d{3}.?\d{3}.?\d{4}|pc.?matic|super.?shield",re.I)
+    regex_caption_check= re.compile(r"pc.?matic.*\d{3}.?\d{3}.?\d{4}")
+    shady_score = 0
     
-    #helper function evalute expression return length of matches
+    #helper function evalute expression return length of matches to assign score total
     def true_or_false (regex, row):
         return len(re.findall(regex, row ))
     
     
     if x.link:
-        if regex_link_exclude.search(x.link):
+        if  true_or_false(regex_link_exclude, x.link):
         # if true_or_false(regex_link_exclude, x.link):
-            return 0
+            if num := true_or_false(regex_caption_check, x.caption):
+                shady_score += num
+            else:
+                return 0
             
         elif num := true_or_false(regex_link, x.link):
         # if num := true_or_false(regex_link, x.link):
-            count_value +=  num
+            shady_score +=  num
+    if x.titleText :
+        if num := true_or_false(regex_titleText, x.titleText):
+            shady_score += num
         
     if x.caption:
         if num := true_or_false(regex_caption, x.caption):
         # if num := true_or_false(regex_caption, x.link):
-            count_value += num
-    x.count_value = count_value 
-    return x.count_value
-  
-   
+            shady_score += num
+    x.shady_score = shady_score 
+    return x.shady_score
+
+
+
  
-# flagcount = file['count_value'][file.apply(data_cleaning, axis=1)] #1 applyies to rows
-file['count_value'] = file.apply(data_cleaning, axis=1) #1 applyies to rows
-# # filtered_data = file['link'].filter(regex=regex_link).any(axis=1).to_string()
-# print(type(flagcount))
-filtered_data = file[ file['count_value'] > 0 ]
+
+# file['shady_score'] = file.apply(data_cleaning, axis=1) #1 applyies to rows
+
+
+# filtered_data = file[ file['shady_score'] > 0 ]
+
+
+# filtered_data.to_csv("applied_style.csv")
+# file.to_csv("applied_style2.csv")
 # print(filtered_data)
-filtered_data.to_csv("filtered_data.csv")
 # # print(len(file.index))

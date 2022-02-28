@@ -6,6 +6,7 @@ import re
 import urllib
 import time
 import os
+from cleaning_data import data_cleaning
 
 page = 0
 supportList = []
@@ -20,34 +21,43 @@ def fetch_url(url=None):
     else:
         url = 'https://www.bing.com/search?q=contact+pc+matic+support+number&first=1&FORM=PERE' 
     headers= {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0'}
+    #send to docker to render javascript
     r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
     soup = BeautifulSoup(r.text,'html.parser')
+    
+    #get related links
     related = soup.select('li.b_ans a[href]')
     for link in related:
         suggestedLinks.add('https://www.bing.com'+str(link))
         suggestedTexts.add(link.text)
     
+    #scrap search engine page
     items = soup.find_all('li',{'class':'b_algo'})
-    #print(soup.find('li',{'class':'b_algo'}))
-    # print(items.find('cite').text)
     for item in items:
         info ={   
             "link": item.find('a')['href'],
             "titleText": item.find('h2').text,
-            "citeTag": item.find('cite').text,
-            "caption": item.find('div',{'class','b_caption'}).text
+            "caption": item.find('div',{'class','b_caption'}).text,
+            "shady_score": 0
         }
+        #add dict to list
         supportList.append(info)
     #making sure links don't contain pcmatic.com
     newDict =[d for d in supportList if 'pcmatic.com' not in d['link']]
+    
+    #clearing support list
     supportList = []
-            
+      
+    #cleaning data & writing data with a shadyscore of more than one        
     df = pd.DataFrame(newDict)
+    df['shady_score'] = df.apply(data_cleaning, axis=1)
+    filtered_data = df[ df['shady_score'] > 0 ]
+    
     if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
-        pd.read_csv('supportLinkData.csv').append(df).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv', index=False)
+        pd.read_csv('supportLinkData.csv').append(filtered_data).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv', index=False)
 
     else:
-        df.to_csv('supportLinkData.csv', index=False)
+        filtered_data.to_csv('supportLinkData.csv', index=False)
         
     #clearing new  dict
   
@@ -56,9 +66,10 @@ def fetch_url(url=None):
     
     
     people_also_searched_for = soup.find_all('div', {'class':'b_expansion_text b_1linetrunc'})
+    #get other search terms
     if people_also_searched_for:
         searched = [ x.text for x in people_also_searched_for]
-        df3 = pd.DataFrame(list(searched))
+        df3 = pd.DataFrame(searched)
         if os.path.exists('peopelAlsoSearchedFor.csv') and os.path.getsize('peopelAlsoSearchedFor.csv') > 0:
             pd.read_csv('peopelAlsoSearchedFor.csv').append(df3).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv', index=False)
         else:
