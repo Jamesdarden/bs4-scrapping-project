@@ -1,4 +1,4 @@
-from numpy import delete
+from numpy import delete, not_equal
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -10,12 +10,12 @@ from cleaning_data import data_cleaning
 
 page = 0
 supportList = []
-suggestedLinks = set()
 suggestedTexts = set()
 
-def fetch_url(url=None):
+def fetch_bing_results(url=None):
     global page
     global supportList
+    suggestedLinks = {'"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number'}
     if url :
         url = url
     else:
@@ -23,28 +23,31 @@ def fetch_url(url=None):
     headers= {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0'}
     #send to docker to render javascript
     r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
-    soup = BeautifulSoup(r.text,'html.parser')
     
+    
+    soup = BeautifulSoup(r.text,'html.parser')
+   
     #get related links
     related = soup.select('li.b_ans a[href]')
     for link in related:
-        suggestedLinks.add('https://www.bing.com'+str(link))
+        suggestedLinks.add('https://www.bing.com/search?q='+urllib.parse.quote_plus(link.text))
         suggestedTexts.add(link.text)
     
-    #scrap search engine page
+    #scrap search engine page gets all search results from page
     items = soup.find_all('li',{'class':'b_algo'})
     for item in items:
         info ={   
             "link": item.find('a')['href'],
             "titleText": item.find('h2').text,
-            "caption": item.find('div',{'class','b_caption'}).text,
-            "shady_score": 0
+            "caption": item.find('div',{'class','b_caption'}).text
+           
         }
         #add dict to list
+      
         supportList.append(info)
     #making sure links don't contain pcmatic.com
     newDict =[d for d in supportList if 'pcmatic.com' not in d['link']]
-    
+    # print(newDict)
     #clearing support list
     supportList = []
       
@@ -52,15 +55,16 @@ def fetch_url(url=None):
     df = pd.DataFrame(newDict)
     df['shady_score'] = df.apply(data_cleaning, axis=1)
     filtered_data = df[ df['shady_score'] > 0 ]
-    
-    if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
-        pd.read_csv('supportLinkData.csv').append(filtered_data).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv', index=False)
-
-    else:
-        filtered_data.to_csv('supportLinkData.csv', index=False)
+    #check if values after cleaning
+    if len(filtered_data) != 0:
+        if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
+            pd.read_csv('supportLinkData.csv').append(filtered_data).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv', index=False)
+        else:
+            filtered_data.to_csv('supportLinkData.csv')
         
-    #clearing new  dict
-  
+    #clearing dataframes
+    filtered_data.empty
+    df.empty
     print("writing to csv dictionary items")
     
     
@@ -69,38 +73,51 @@ def fetch_url(url=None):
     #get other search terms
     if people_also_searched_for:
         searched = [ x.text for x in people_also_searched_for]
+        for item in range(0,len(searched)):
+            if 'See all results for this question' in searched[item] or 'feedback' in searched[item]:
+                searched.remove(searched[item])
+            
         df3 = pd.DataFrame(searched)
         if os.path.exists('peopelAlsoSearchedFor.csv') and os.path.getsize('peopelAlsoSearchedFor.csv') > 0:
-            pd.read_csv('peopelAlsoSearchedFor.csv').append(df3).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv', index=False)
+            pd.read_csv('peopelAlsoSearchedFor.csv').append(df3).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv')
         else:
             df3.to_csv('peopelAlsoSearchedFor.csv')
-        
+        df3.empty
         print('wrote to search for csv')
        
     
     time.sleep(5)
-    
-    if os.path.exists('peopelAlsoSearchedFor.csv') and os.path.getsize('peopelAlsoSearchedFor.csv') > 0:
-        df2 = pd.DataFrame(suggestedTexts)
-        pd.read_csv('suggestions.csv').append(df2).drop_duplicates().to_csv('suggestions.csv', index=False)
+    #check if file exsist append if not write
+    if os.path.exists('suggestions.csv') and os.path.getsize('suggestions.csv') > 0:
+        df2 = pd.DataFrame(suggestedTexts).drop_duplicates(subset=['link'], keep='last')
+        pd.read_csv('suggestions.csv').append(df2).drop_duplicates().to_csv('suggestions.csv')
     else:
         df2 = pd.DataFrame(suggestedTexts)
-        df2.to_csv('suggestions.csv',index=False)
+        df2.to_csv('suggestions.csv')
+    # empty suggested text
+    suggestedTexts.clear()
+    df2.empty
         
     nextpage = soup.find('a',{'class': 'sb_pagN sb_pagN_bp b_widePag sb_bp'})['href']
     # print(nextpage, '+++++++==============')
-    if nextpage and page < 10:
+    if nextpage and page < 8:
         page += 1 
         print('going through next page')
-        fetch_url('https://www.bing.com/'+ nextpage)
+        fetch_bing_results('https://www.bing.com/'+ nextpage)
     else:
-        searchTerms = ['"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number']
+        #initial search list
+     
         page = 0
        
-        for i in range(0, len(searchTerms)):
-            print(f'this is the search term: {i} {searchTerms[i]}')
-            fetch_url('https://www.bing.com/search?q='+ urllib.parse.quote_plus(searchTerms[i]))
+        for count, item in enumerate(suggestedLinks, start=0):
+            if count == 25:
+                break
+            print(f'this is the search term: {item}')
+            fetch_bing_results('https://www.bing.com/search?q='+ urllib.parse.quote_plus(item))
+            #suggestedlink scrap    
+            
+        print("done crawling bing")
 
 
-fetch_url()      
+fetch_bing_results()      
     

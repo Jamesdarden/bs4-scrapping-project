@@ -17,7 +17,7 @@ def data_cleaning(x):
 
     regex_caption = re.compile(r'pc.?matic.*\d{3}.?\d{3}.?\d{4}|maticpc|pc.?matic.*\W{12}|pc.?matic.*number|pc.?matic.*support|pc.?matic.*tech',re.I)
     regex_link = re.compile(r'(pc[\w_-]?matic|\d{3}\w?\d|\W{3}\w?\d\W{4}).?support|[maticpc]{7}', re.I)
-    regex_link_exclude = re.compile(r"review|bbb\.org|amazon\.com|pcpitstop\.com|linkedin\.com|pc\w?pitstop\.com|askbobrankin\.com|microsoft\.com|www\.facebook\.com/.?pcmatic/|tenforums\.com|article|news|[-_]vs[-_]|play\.google\.com", re.I)
+    regex_link_exclude = re.compile(r"review|bbb\.org|amazon\.com|pcpitstop\.com|linkedin\.com|pc\w?pitstop\.com|askbobrankin\.com|microsoft\.com|www\.facebook\.com/.?pcmatic/|tenforums\.com|article|news|[-_]vs[-_]|play\.google\.com|bleepingcomputer\.com|mozilla\.org|pinterest\.com|job", re.I)
     regex_titleText = re.compile(r"pc.?matic.*\d{3}.?\d{3}.?\d{4}|pc.?matic|super.?shield",re.I)
     regex_caption_check= re.compile(r"pc.?matic.*\d{3}.?\d{3}.?\d{4}")
     shady_score = 0
@@ -36,7 +36,7 @@ def data_cleaning(x):
                 return 0
             
         elif num := true_or_false(regex_link, x.link):
-        # if num := true_or_false(regex_link, x.link):
+            
             shady_score +=  num
     if x.titleText :
         if num := true_or_false(regex_titleText, x.titleText):
@@ -44,7 +44,7 @@ def data_cleaning(x):
         
     if x.caption:
         if num := true_or_false(regex_caption, x.caption):
-        # if num := true_or_false(regex_caption, x.link):
+    
             shady_score += num
     x.shady_score = shady_score 
     return x.shady_score
