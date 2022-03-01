@@ -56,15 +56,19 @@ def fetch_bing_results(url=None):
     df['shady_score'] = df.apply(data_cleaning, axis=1)
     filtered_data = df[ df['shady_score'] > 0 ]
     #check if values after cleaning
-    if len(filtered_data) != 0:
+    if len(filtered_data.index) > 0:
         if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
-            pd.read_csv('supportLinkData.csv').append(filtered_data).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv', index=False)
+            pd.read_csv('supportLinkData.csv').append(filtered_data).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv')
+            del filtered_data
+            del df
         else:
             filtered_data.to_csv('supportLinkData.csv')
+            del filtered_data
+            del df
         
     #clearing dataframes
-    filtered_data.empty
-    df.empty
+    newDict.clear()
+    
     print("writing to csv dictionary items")
     
     
@@ -78,25 +82,29 @@ def fetch_bing_results(url=None):
                 searched.remove(searched[item])
             
         df3 = pd.DataFrame(searched)
-        if os.path.exists('peopelAlsoSearchedFor.csv') and os.path.getsize('peopelAlsoSearchedFor.csv') > 0:
-            pd.read_csv('peopelAlsoSearchedFor.csv').append(df3).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv')
-        else:
-            df3.to_csv('peopelAlsoSearchedFor.csv')
-        df3.empty
+        if len(df3.index) > 0:
+            if os.path.exists('peopelAlsoSearchedFor.csv') and os.path.getsize('peopelAlsoSearchedFor.csv') > 0:
+                pd.read_csv('peopelAlsoSearchedFor.csv').append(df3).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv')
+            else:
+                df3.to_csv('peopelAlsoSearchedFor.csv')
+            del df3
+            searched.clear()
         print('wrote to search for csv')
        
     
     time.sleep(5)
     #check if file exsist append if not write
-    if os.path.exists('suggestions.csv') and os.path.getsize('suggestions.csv') > 0:
-        df2 = pd.DataFrame(suggestedTexts).drop_duplicates(subset=['link'], keep='last')
-        pd.read_csv('suggestions.csv').append(df2).drop_duplicates().to_csv('suggestions.csv')
-    else:
-        df2 = pd.DataFrame(suggestedTexts)
-        df2.to_csv('suggestions.csv')
+    if suggestedTexts:
+        if os.path.exists('suggestions.csv') and os.path.getsize('suggestions.csv') > 0:
+            df2 = pd.DataFrame(suggestedTexts)
+            pd.read_csv('suggestions.csv').append(df2).drop_duplicates().to_csv('suggestions.csv')
+            del df2
+        else:
+            df2 = pd.DataFrame(suggestedTexts)
+            df2.to_csv('suggestions.csv')
+            del df2
     # empty suggested text
     suggestedTexts.clear()
-    df2.empty
         
     nextpage = soup.find('a',{'class': 'sb_pagN sb_pagN_bp b_widePag sb_bp'})['href']
     # print(nextpage, '+++++++==============')
@@ -112,7 +120,7 @@ def fetch_bing_results(url=None):
         for count, item in enumerate(suggestedLinks, start=0):
             if count == 25:
                 break
-            print(f'this is the search term: {item}')
+            print(f'this is the search term: {item}\nIn suggestlinks loop')
             fetch_bing_results('https://www.bing.com/search?q='+ urllib.parse.quote_plus(item))
             #suggestedlink scrap    
             
