@@ -1,4 +1,6 @@
-from numpy import delete, not_equal
+
+
+import numpy as np
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -11,10 +13,12 @@ from cleaning_data import data_cleaning
 page = 0
 supportList = []
 suggestedTexts = set()
+global_while_loop_counter =0
 
 def fetch_bing_results(url=None):
     global page
     global supportList
+    global global_while_loop_counter
     suggestedLinks = {'"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number'}
     if url :
         url = url
@@ -29,6 +33,10 @@ def fetch_bing_results(url=None):
    
     #get related links
     related = soup.select('li.b_ans a[href]')
+    for item in len(related):
+        if 'See all results for this question' in related[item] or 'Feedback' in related[item] or 'See all results for this question' in related[item] or 'watch' in related[item] or 'See more videos' in related[item]:
+                related.remove(related[item])
+    
     for link in related:
         suggestedLinks.add('https://www.bing.com/search?q='+urllib.parse.quote_plus(link.text))
         suggestedTexts.add(link.text)
@@ -58,13 +66,13 @@ def fetch_bing_results(url=None):
     #check if values after cleaning
     if len(filtered_data.index) > 0:
         if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
-            pd.read_csv('supportLinkData.csv').append(filtered_data).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv')
-            del filtered_data
-            del df
+            value1 = pd.read_csv('supportLinkData.csv') 
+            values = [value1, filtered_data]
+            pd.concat(values, ignore_index=True).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv',index=False)
+           
         else:
-            filtered_data.to_csv('supportLinkData.csv')
-            del filtered_data
-            del df
+            filtered_data.to_csv('supportLinkData.csv',index=False)
+           
         
     #clearing dataframes
     newDict.clear()
@@ -78,16 +86,18 @@ def fetch_bing_results(url=None):
     if people_also_searched_for:
         searched = [ x.text for x in people_also_searched_for]
         for item in range(0,len(searched)):
-            if 'See all results for this question' in searched[item] or 'feedback' in searched[item]:
+            if 'See all results for this question' in searched[item] or 'Feedback' in searched[item]:
                 searched.remove(searched[item])
             
-        df3 = pd.DataFrame(searched)
+        df3 = pd.DataFrame( {'terms_searched':searched})
         if len(df3.index) > 0:
             if os.path.exists('peopelAlsoSearchedFor.csv') and os.path.getsize('peopelAlsoSearchedFor.csv') > 0:
-                pd.read_csv('peopelAlsoSearchedFor.csv').append(df3).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv')
+                value2 = pd.read_csv('peopelAlsoSearchedFor.csv')
+                values =[value2,df3]
+                pd.concat(values, ignore_index=True).drop_duplicates().to_csv('peopelAlsoSearchedFor.csv',index=False)
             else:
-                df3.to_csv('peopelAlsoSearchedFor.csv')
-            del df3
+                df3.to_csv('peopelAlsoSearchedFor.csv',index=False)
+           
             searched.clear()
         print('wrote to search for csv')
        
@@ -95,36 +105,46 @@ def fetch_bing_results(url=None):
     time.sleep(5)
     #check if file exsist append if not write
     if suggestedTexts:
-        if os.path.exists('suggestions.csv') and os.path.getsize('suggestions.csv') > 0:
-            df2 = pd.DataFrame(suggestedTexts)
-            pd.read_csv('suggestions.csv').append(df2).drop_duplicates().to_csv('suggestions.csv')
-            del df2
+        df2 = pd.DataFrame({'related_searches':list(suggestedTexts)})
+        if os.path.exists('related_searches.csv') and os.path.getsize('related_searches.csv') > 0:
+            value3= pd.read_csv('related_searches.csv')
+            values= [df2,value3]
+            pd.concat(values).drop_duplicates().to_csv('related_searches.csv', index=False)
+            
         else:
-            df2 = pd.DataFrame(suggestedTexts)
-            df2.to_csv('suggestions.csv')
-            del df2
+            df2.to_csv('suggestions.csv',index=False)
+            
     # empty suggested text
     suggestedTexts.clear()
         
     nextpage = soup.find('a',{'class': 'sb_pagN sb_pagN_bp b_widePag sb_bp'})['href']
     # print(nextpage, '+++++++==============')
-    if nextpage and page < 8:
+    # scrap first 7 pages of search results
+    if nextpage and page < 7:
         page += 1 
+        print(f"page number in if statement {page} ")
         print('going through next page')
         fetch_bing_results('https://www.bing.com/'+ nextpage)
-    else:
-        #initial search list
-     
+   
+   
+    #initial search list
+   
+    # make set iterable by converting to list
+    newList = list(suggestedLinks)
+    # go through first 15 suggestedlinks and scrap the the first 7 pages of each
+    while global_while_loop_counter < len(newList) and global_while_loop_counter < 15:
         page = 0
-       
-        for count, item in enumerate(suggestedLinks, start=0):
-            if count == 25:
-                break
-            print(f'this is the search term: {item}\nIn suggestlinks loop')
-            fetch_bing_results('https://www.bing.com/search?q='+ urllib.parse.quote_plus(item))
-            #suggestedlink scrap    
-            
-        print("done crawling bing")
+        print(f"page number is {page} in while loop")
+        print(f'this is the search term: {newList[global_while_loop_counter]}\nIn suggestlinks loop number : {global_while_loop_counter}')
+        global_while_loop_counter += 1
+        fetch_bing_results('https://www.bing.com/search?q='+ urllib.parse.quote_plus(newList[global_while_loop_counter]))
+        #suggestedlink scrap   
+    #initialize global variables to defaults 
+    global_while_loop_counter = 0 
+    page = 0
+    supportList = []
+    suggestedTexts = set()
+    print("done crawling bing")
 
 
 fetch_bing_results()      
