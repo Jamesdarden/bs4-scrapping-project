@@ -10,14 +10,15 @@ import time
 import os
 from cleaning_data import data_cleaning
 
-page = 0
-supportList = []
-suggestedTexts = set()
-global_while_loop_counter =0
+# page = 0
+# supportList = []
+# suggestedTexts = set()
+# global_while_loop_counter =0
 
 def fetch_bing_results(url=None):
     global page
     global supportList
+    global suggestedTexts
     global global_while_loop_counter
     suggestedLinks = {'"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number'}
     if url :

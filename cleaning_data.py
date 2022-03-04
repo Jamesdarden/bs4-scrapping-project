@@ -28,22 +28,22 @@ def data_cleaning(x):
     
     
     if x.link:
-        if  true_or_false(regex_link_exclude, x.link):
+        if  true_or_false(regex_link_exclude, str(x.link)):
         # if true_or_false(regex_link_exclude, x.link):
-            if num := true_or_false(regex_caption_check, x.caption):
+            if num := true_or_false(regex_caption_check, str(x.caption)):
                 shady_score += num
             else:
                 return 0
             
-        elif num := true_or_false(regex_link, x.link):
+        elif num := true_or_false(regex_link, str(x.link)):
             
             shady_score +=  num
     if x.titleText :
-        if num := true_or_false(regex_titleText, x.titleText):
+        if num := true_or_false(regex_titleText, str(x.titleText)):
             shady_score += num
         
     if x.caption:
-        if num := true_or_false(regex_caption, x.caption):
+        if num := true_or_false(regex_caption, str(x.caption)):
     
             shady_score += num
     x.shady_score = shady_score 
