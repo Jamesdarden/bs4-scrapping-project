@@ -4,10 +4,11 @@ from cleaning_data import data_cleaning
 import pandas as pd
 import os
 import time
+import urllib
 
 global_while_loop_counter =0
-supportList = []
-page = 0
+# supportList = []
+# page = 0
 
 
 
@@ -18,7 +19,7 @@ page = 0
 
 
 # div.main-content
-def get_soup(url):
+def get_soup(url, header):
     headers = { 'accept':'*/*',
         'accept-encoding':'gzip, deflate, br',
         'accept-language':'en-GB,en;q=0.9,en-US;q=0.8,hi;q=0.7,la;q=0.6',
@@ -28,6 +29,7 @@ def get_soup(url):
         'referer':'https',
         'sec-fetch-mode':'no-cors',
         'sec-fetch-site':'cross-site',
+        'Clear-Site-Data':"*",
         'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
     }
     with sync_playwright() as p:
@@ -36,13 +38,14 @@ def get_soup(url):
         page.goto(url)
         # page.fill(input#imput, textToBeUsed) uses css selectors selects element and fills with text 
         # page.is_visible()
-        
+        page.wait_for_load_state(state='domcontentloaded')
         if page.is_visible('input[type=submit]'):
             page.click('input[type=submit]')
-        page.is_visible("div.CheckboxCaptcha-Checkbox")
-        page.locator("text=Accept").click()
+        if page.is_visible("div.CheckboxCaptcha-Checkbox"):
+            page.locator("text=Accept").click()
         html = page.inner_html("div.content__left")
         soup = BeautifulSoup(html,'html.parser')
+        page.close()
     return soup
 def fetch_yandex_results(url=None):
     global global_while_loop_counter
@@ -99,6 +102,16 @@ def fetch_yandex_results(url=None):
 
     next_page = soup.select_one("div.pager div.pager__items a.pager__item_kind_next")['href']
     next_page_link ='https://yandex.com/'+next_page
-    print(next_page)
+    if next_page_link and page < 7:
+        page += 1
+        print(f"page number {page} in if statement")
+        print(f"Going To next page")
+        fetch_yandex_results(next_page_link)
+        
+    while global_while_loop_counter < len(supportList) and global_while_loop_counter < 6:
+        page = 0
+        print(f"Searching next term: {suggestedLinks[global_while_loop_counter]}")
+        global_while_loop_counter += 1
+        fetch_yandex_results('https://yandex.com/search/?text=' + urllib.parse.quote_plus(suggestedLinks[global_while_loop_counter]))
 
 fetch_yandex_results()   

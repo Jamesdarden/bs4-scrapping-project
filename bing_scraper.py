@@ -12,8 +12,8 @@ from cleaning_data import data_cleaning
 
 # page = 0
 # supportList = []
-# suggestedTexts = set()
-# global_while_loop_counter =0
+suggestedTexts = set()
+global_while_loop_counter =0
 
 def fetch_bing_results(url=None):
     global page
@@ -25,7 +25,18 @@ def fetch_bing_results(url=None):
         url = url
     else:
         url = 'https://www.bing.com/search?q=contact+pc+matic+support+number&first=1&FORM=PERE' 
-    headers= {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0'}
+    headers = { 'accept':'*/*',
+        'accept-encoding':'gzip, deflate, br',
+        'accept-language':'en-GB,en;q=0.9,en-US;q=0.8,hi;q=0.7,la;q=0.6',
+        'cache-control':'no-cache',
+        'dnt':'1',
+        'pragma':'no-cache',
+        'referer':'https',
+        'sec-fetch-mode':'no-cors',
+        'sec-fetch-site':'cross-site',
+        'Clear-Site-Data':"*",
+        'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+    }
     #send to docker to render javascript
     r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
     
@@ -130,8 +141,9 @@ def fetch_bing_results(url=None):
    
     #initial search list
    
-    # make set iterable by converting to list
-    newList = list(suggestedLinks)
+    # make set iterable by converting to list and keep order
+   
+    newList = [i for n, i in enumerate(suggestedLinks) if i not in suggestedLinks[:n]]
     # go through first 15 suggestedlinks and scrap the the first 7 pages of each
     while global_while_loop_counter < len(newList) and global_while_loop_counter < 15:
         page = 0
@@ -141,11 +153,11 @@ def fetch_bing_results(url=None):
         fetch_bing_results('https://www.bing.com/search?q='+ urllib.parse.quote_plus(newList[global_while_loop_counter]))
         #suggestedlink scrap   
     #initialize global variables to defaults 
-    global_while_loop_counter = 0 
-    page = 0
-    supportList = []
-    suggestedTexts = set()
-    print("done crawling bing")
+    # global_while_loop_counter = 0 
+    # page = 0
+    # supportList = []
+    # suggestedTexts = set()
+    # print("done crawling bing")
 
 
 fetch_bing_results()      

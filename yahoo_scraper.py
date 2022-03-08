@@ -9,8 +9,8 @@ import time
 import os
 from cleaning_data import data_cleaning
 
-page = 0
-supportList = []
+# page = 0
+# supportList = []
 suggestedTexts = set()
 global_while_loop_counter =0
 
@@ -25,7 +25,18 @@ def fetch_yahoo_results(url=None):
         url = url
     else:
         url = url_base+'"pc+matic"+support+phone+number' 
-    headers= {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0'}
+    headers = { 'accept':'*/*',
+        'accept-encoding':'gzip, deflate, br',
+        'accept-language':'en-GB,en;q=0.9,en-US;q=0.8,hi;q=0.7,la;q=0.6',
+        'cache-control':'no-cache',
+        'dnt':'1',
+        'pragma':'no-cache',
+        'referer':'https',
+        'sec-fetch-mode':'no-cors',
+        'sec-fetch-site':'cross-site',
+        'Clear-Site-Data':"*",
+        'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+    }
     #send to docker to render javascript
     r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
     
@@ -153,7 +164,7 @@ def fetch_yahoo_results(url=None):
     nextpage = soup.find('a',{'class': 'next'})['href']
     # print(nextpage, '+++++++==============')
     # scrap first 7 pages of search results
-    if nextpage and page < 2:
+    if nextpage and page < 7:
         page += 1 
         print(f"page number in if statement {page} ")
         print('going through next page')
@@ -162,10 +173,11 @@ def fetch_yahoo_results(url=None):
    
     # #initial search list
    
-    # make set iterable by converting to list
-    newList = list(suggestedLinks)
+    # make set iterable by converting to list and preserve order
+    # newList = list(suggestedLinks)
+    newList = [i for n, i in enumerate(suggestedLinks) if i not in suggestedLinks[:n]]
     # go through first 15 suggestedlinks and scrap the the first 7 pages of each
-    while global_while_loop_counter < len(newList) and global_while_loop_counter < 2:
+    while global_while_loop_counter < len(newList) and global_while_loop_counter < 9:
         page = 0
         # print(global_while_loop_counter,"--------------------+++++++++++")
         # print(f"page number is {page} in while loop")
