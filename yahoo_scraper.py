@@ -9,16 +9,18 @@ import time
 import os
 from cleaning_data import data_cleaning
 
-# page = 0
-# supportList = []
+page = 0
+supportList = []
 suggestedTexts = set()
 global_while_loop_counter =0
+newList = []
 
 def fetch_yahoo_results(url=None):
     global page
     global supportList
     global global_while_loop_counter
     global suggestedTexts
+    global newList
     url_base = 'https://search.yahoo.com/search?p='
     suggestedLinks = {'"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number'}
     if url :
@@ -46,16 +48,17 @@ def fetch_yahoo_results(url=None):
     #get related links
     related = soup.select('table tbody tr a')
     #get list of related urls to try
-    for item in related:
-        #PC matic is not in the result added to make relevant search link
-        item.text
-        new_value = item.text
-        if 'pc matic' not in new_value:
-            new_value = f'"pc matic" {new_value}'
-        # new_value =[f'"pc matic" {x}' for x in new_value if 'pc matic' not in x]
-        suggestedLinks.add(url_base +urllib.parse.quote_plus(new_value))
-        suggestedTexts.add(item.text)
-        
+    if related:
+        for item in related:
+            #PC matic is not in the result added to make relevant search link
+            item.text
+            new_value = item.text
+            if 'pc matic' not in new_value:
+                new_value = f'"pc matic" {new_value}'
+            # new_value =[f'"pc matic" {x}' for x in new_value if 'pc matic' not in x]
+            suggestedLinks.add(url_base +urllib.parse.quote_plus(new_value))
+            suggestedTexts.add(item.text)
+            
     
     
         
@@ -121,7 +124,7 @@ def fetch_yahoo_results(url=None):
         
     #clearing dataframes
     newDict.clear()
-    
+    print("wrote to csv file")
     
     
     
@@ -175,17 +178,27 @@ def fetch_yahoo_results(url=None):
    
     # make set iterable by converting to list and preserve order
     # newList = list(suggestedLinks)
-    newList = [i for n, i in enumerate(suggestedLinks) if i not in suggestedLinks[:n]]
+    
+    
+    addedList = [i for n, i in enumerate(suggestedLinks) if i not in newList]
+    newList.extend(addedList)
     # go through first 15 suggestedlinks and scrap the the first 7 pages of each
-    while global_while_loop_counter < len(newList) and global_while_loop_counter < 9:
+    while global_while_loop_counter < len(newList) and global_while_loop_counter < 10:
         page = 0
         # print(global_while_loop_counter,"--------------------+++++++++++")
         # print(f"page number is {page} in while loop")
         print(f'this is the search term: {newList[global_while_loop_counter]}\nIn suggestlinks loop number : {global_while_loop_counter}')
         global_while_loop_counter += 1
-        fetch_yahoo_results(url_base + urllib.parse.quote_plus(newList[global_while_loop_counter]))
+        try:
+            fetch_yahoo_results(url_base + urllib.parse.quote_plus(newList[global_while_loop_counter]))
+        
+        except IndexError:
+            print(f"indexing error happened in yahoo scraper")
+            break
+    newList = []
         #suggestedlink scrap
-        break   
+        
+        
     
    
     #add to main page 

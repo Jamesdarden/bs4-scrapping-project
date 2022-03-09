@@ -23,6 +23,7 @@ def initialize_global_values_to_defaults(message):
     
 
 
+
 try:
     fetch_bing_results()
     initialize_global_values_to_defaults("Done crawling bing")

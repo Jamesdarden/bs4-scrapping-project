@@ -7,8 +7,8 @@ import time
 import urllib
 
 global_while_loop_counter =0
-# supportList = []
-# page = 0
+supportList = []
+page = 0
 
 
 
@@ -19,7 +19,7 @@ global_while_loop_counter =0
 
 
 # div.main-content
-def get_soup(url, header):
+def get_soup(url):
     headers = { 'accept':'*/*',
         'accept-encoding':'gzip, deflate, br',
         'accept-language':'en-GB,en;q=0.9,en-US;q=0.8,hi;q=0.7,la;q=0.6',
@@ -43,6 +43,7 @@ def get_soup(url, header):
             page.click('input[type=submit]')
         if page.is_visible("div.CheckboxCaptcha-Checkbox"):
             page.locator("text=Accept").click()
+        page.wait_for_selector("div.content__left")
         html = page.inner_html("div.content__left")
         soup = BeautifulSoup(html,'html.parser')
         page.close()
@@ -98,11 +99,11 @@ def fetch_yandex_results(url=None):
             print("writing to csv dictionary items")
 
     newDict.clear()
-    time.sleep(5)
+    time.sleep(120)
 
     next_page = soup.select_one("div.pager div.pager__items a.pager__item_kind_next")['href']
     next_page_link ='https://yandex.com/'+next_page
-    if next_page_link and page < 7:
+    if next_page_link and page < 6:
         page += 1
         print(f"page number {page} in if statement")
         print(f"Going To next page")
