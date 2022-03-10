@@ -1,3 +1,4 @@
+from tkinter import EXCEPTION
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 from cleaning_data import data_cleaning
@@ -53,10 +54,11 @@ def fetch_yandex_results(url=None):
     global supportList
     global page
     
-    suggestedLinks = ['"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number','How do I contact "pcmatic" customer support','Is there a "PC Matic" technical support company']
+    # suggestedLinks = ['"pc matic" assist number','"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number','How do I contact "pcmatic" customer support','Is there a "PC Matic" technical support company']
+    suggestedLinks = ['"PC Matic" helpline number', '"pc matic" toll free number','"pc matic" tech support number','How do I contact "pcmatic" customer support','Is there a "PC Matic" technical support company']
     
     if not url:
-        url = 'https://yandex.com/search/?text="pc+matic"+support+number'
+        url = 'https://yandex.com/search/?text="pc+matic"+assist+number'
     
     #parsed html elements
     soup =  get_soup(url)
@@ -103,16 +105,23 @@ def fetch_yandex_results(url=None):
 
     next_page = soup.select_one("div.pager div.pager__items a.pager__item_kind_next")['href']
     next_page_link ='https://yandex.com/'+next_page
-    if next_page_link and page < 6:
+    
+   
+    if next_page_link and page < 2:
         page += 1
         print(f"page number {page} in if statement")
         print(f"Going To next page")
         fetch_yandex_results(next_page_link)
+    
+
         
     while global_while_loop_counter < len(supportList) and global_while_loop_counter < 6:
+        print('in while loop')
         page = 0
         print(f"Searching next term: {suggestedLinks[global_while_loop_counter]}")
         global_while_loop_counter += 1
-        fetch_yandex_results('https://yandex.com/search/?text=' + urllib.parse.quote_plus(suggestedLinks[global_while_loop_counter]))
+        fetch_yandex_results('https://yandex.com/search/?text=' + urllib.parse.quote_plus(suggestedLinks[global_while_loop_counter], safe="/"))
+
+        
 
 fetch_yandex_results()   
