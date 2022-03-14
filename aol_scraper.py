@@ -8,6 +8,23 @@ import urllib
 import time
 import os
 from cleaning_data import data_cleaning
+import logging
+from final_clearer import fix_url
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(lineno)d - %(levelname)s - %(name)s - %(message)s')
+stream_formatter = logging.Formatter('%(lineno)d - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('BingScraper.log')
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(stream_formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 page = 0
 supportList = []
@@ -40,11 +57,11 @@ def fetch_aol_results(url=None):
         'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
     }
     #send to docker to render javascript
-    r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
-    
-    
-    soup = BeautifulSoup(r.text,'html.parser')
-   
+    try:
+        r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
+        soup = BeautifulSoup(r.text,'html.parser')
+    except Exception:
+        logger.exception(stack_info=True)
     #get related links
     related = soup.select('div.dd table.compTable tbody tr td')
     #get list of related urls to try
@@ -57,10 +74,12 @@ def fetch_aol_results(url=None):
                 new_value = ''
             if 'pc matic' not in new_value:
                 new_value = f'"pc matic" {new_value}'
+        
+            if len(item) >0:   
+                suggestedLinks.add(url_base +urllib.parse.quote_plus(new_value))
+                suggestedTexts.add(item.text)
+        
             
-            # new_value =[f'"pc matic" {x}' for x in new_value if 'pc matic' not in x]
-            suggestedLinks.add(url_base +urllib.parse.quote_plus(new_value))
-            suggestedTexts.add(item.text)
             
     
     
@@ -81,11 +100,12 @@ def fetch_aol_results(url=None):
             # print(newstring)
             regex_pattern = re.compile("(//)|(rk)", re.I)
             wanted_url = re.split(regex_pattern,newstring[1])
-            print(wanted_url)
+            logger.info(wanted_url)
             newUrl = f'https://{wanted_url[0]}/'
             return newUrl
-        except IndexError:
+        except Exception:
             # newUrl = splitString
+            logger.exception(stack_info=True)
             newUrl = string
             return newUrl
             
@@ -94,7 +114,7 @@ def fetch_aol_results(url=None):
     for item in main_items:
         
         info ={   
-            "link": returnReadableLink(item),
+            "link": fix_url(returnReadableLink(item)),
             "titleText" : item.find("h3", class_='title').text,
             "caption" :item.find("div",{"class":"compText"}).text
            
@@ -117,22 +137,22 @@ def fetch_aol_results(url=None):
         filtered_data = df[ df['shady_score'] > 0 ]
     else:
         filtered_data = df
-        print('no dictionary items to add to csv')
+        logger.info('no dictionary items to add to csv')
     #check if values after cleaning
     if len(filtered_data.index) > 0:
         if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
             value1 = pd.read_csv('supportLinkData.csv') 
             values = [value1, filtered_data]
             pd.concat(values, ignore_index=True).drop_duplicates(subset=['link'],keep='first',inplace=True).to_csv('supportLinkData.csv',index=False)
-            print("writing to csv dictionary items")
+            logger.info("writing to csv dictionary items")
         else:
             filtered_data.to_csv('supportLinkData.csv',index=False)
-            print("writing to csv dictionary items")
+            logger.info("writing to csv dictionary items")
            
         
     #clearing dataframes
     newDict.clear()
-    print("wrote to csv file")
+   
     
     
     
@@ -154,7 +174,7 @@ def fetch_aol_results(url=None):
                 df3.to_csv('peopelAlsoSearchedFor.csv',index=False)
            
             searched_for_list.clear()
-        print('wrote to search for csv')
+        logger.info('wrote to search for csv')
        
     
     time.sleep(5)
@@ -177,8 +197,9 @@ def fetch_aol_results(url=None):
     # scrap first 7 pages of search results
     if nextpage and page < 7:
         page += 1 
-        print(f"page number in if statement {page} ")
-        print('going through next page')
+        # print(f"page number in if statement {page} ")
+        url_args = urllib.parse.unquote(urllib.parse.urlparse(url)[4])
+        logger.info(f'going to page: {page}, in {url_args}')
         fetch_aol_results(nextpage)
    
    
@@ -195,14 +216,14 @@ def fetch_aol_results(url=None):
         page = 0
         # print(global_while_loop_counter,"--------------------+++++++++++")
         # print(f"page number is {page} in while loop")
-        print(f'this is the search term: {newList[global_while_loop_counter]}\nIn suggestlinks loop number : {global_while_loop_counter}')
+        logger.info(f'this is the search term: {newList[global_while_loop_counter]}\nIn suggestlinks loop number : {global_while_loop_counter}')
         global_while_loop_counter += 1
         try:
             fetch_aol_results(url_base + urllib.parse.quote_plus(newList[global_while_loop_counter]))
         
-        except IndexError:
-            print(f"indexing error happened in yahoo scraper")
-            break
+        except Exception:
+            logger.exception(stack_info=True)
+          
     newList = []
         #suggestedlink scrap
         

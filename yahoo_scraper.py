@@ -8,6 +8,22 @@ import urllib
 import time
 import os
 from cleaning_data import data_cleaning
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(lineno)d - %(levelname)s - %(name)s - %(message)s')
+stream_formatter = logging.Formatter('%(lineno)d - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('BingScraper.log')
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(stream_formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 page = 0
 supportList = []
@@ -40,11 +56,12 @@ def fetch_yahoo_results(url=None):
         'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
     }
     #send to docker to render javascript
-    r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
-    
-    
-    soup = BeautifulSoup(r.text,'html.parser')
-   
+    try:
+        
+        r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
+        soup = BeautifulSoup(r.text,'html.parser')
+    except Exception:
+        logger.exception(stack_info=True)
     #get related links
     related = soup.select('table tbody tr a')
     #get list of related urls to try
@@ -76,7 +93,8 @@ def fetch_yahoo_results(url=None):
         try:
             newUrl = f'https://www.{splitString[1]}'
             return newUrl
-        except IndexError:
+        except Exception:
+            logger.exception(stack_info=True)
             # newUrl = splitString
             newUrl = string
             return newUrl
@@ -109,22 +127,22 @@ def fetch_yahoo_results(url=None):
         filtered_data = df[ df['shady_score'] > 0 ]
     else:
         filtered_data = df
-        print('no dictionary items to add to csv')
+        logger.info('no dictionary items to add to csv')
     #check if values after cleaning
     if len(filtered_data.index) > 0:
         if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
             value1 = pd.read_csv('supportLinkData.csv') 
             values = [value1, filtered_data]
             pd.concat(values, ignore_index=True).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv',index=False)
-            print("writing to csv dictionary items")
+            logger.info("writing to csv dictionary items")
         else:
             filtered_data.to_csv('supportLinkData.csv',index=False)
-            print("writing to csv dictionary items")
+            logger.info("writing to csv dictionary items")
            
         
     #clearing dataframes
     newDict.clear()
-    print("wrote to csv file")
+    
     
     
     
@@ -146,31 +164,19 @@ def fetch_yahoo_results(url=None):
                 df3.to_csv('peopelAlsoSearchedFor.csv',index=False)
            
             searched_for_list.clear()
-        print('wrote to search for csv')
+        logger.info('wrote to search for csv')
        
     
     time.sleep(5)
-    # #check if file exsist append if not write
-    # if suggestedTexts:
-    #     df2 = pd.DataFrame({'related_searches':list(suggestedTexts)})
-    #     if os.path.exists('related_searches.csv') and os.path.getsize('related_searches.csv') > 0:
-    #         value3= pd.read_csv('related_searches.csv')
-    #         values= [df2,value3]
-    #         pd.concat(values).drop_duplicates().to_csv('related_searches.csv', index=False)
-            
-    #     else:
-    #         df2.to_csv('suggestions.csv',index=False)
-            
-    # # empty suggested text
-    # suggestedTexts.clear()
+
         
     nextpage = soup.find('a',{'class': 'next'})['href']
-    # print(nextpage, '+++++++==============')
-    # scrap first 7 pages of search results
+    
     if nextpage and page < 7:
         page += 1 
         print(f"page number in if statement {page} ")
-        print('going through next page')
+        url_args = urllib.parse.unquote(urllib.parse.urlparse(url)[4])
+        logger.info(f'going to page: {page}, in {url_args}')
         fetch_yahoo_results(nextpage)
    
    
@@ -187,14 +193,14 @@ def fetch_yahoo_results(url=None):
         page = 0
         # print(global_while_loop_counter,"--------------------+++++++++++")
         # print(f"page number is {page} in while loop")
-        print(f'this is the search term: {newList[global_while_loop_counter]}\nIn suggestlinks loop number : {global_while_loop_counter}')
+        logger.info(f'this is the search term: {newList[global_while_loop_counter]}\nIn suggestlinks loop number : {global_while_loop_counter}')
         global_while_loop_counter += 1
         try:
             fetch_yahoo_results(url_base + urllib.parse.quote_plus(newList[global_while_loop_counter]))
         
-        except IndexError:
-            print(f"indexing error happened in yahoo scraper")
-            break
+        except Exception:
+            logger.exception(stack_info=True)
+            
     newList = []
         #suggestedlink scrap
         

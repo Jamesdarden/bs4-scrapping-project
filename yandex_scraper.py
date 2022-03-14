@@ -1,4 +1,4 @@
-from tkinter import EXCEPTION
+
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 from cleaning_data import data_cleaning
@@ -6,6 +6,22 @@ import pandas as pd
 import os
 import time
 import urllib
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(lineno)d - %(levelname)s - %(name)s - %(message)s')
+stream_formatter = logging.Formatter('%(lineno)d - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler('BingScraper.log')
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(stream_formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 global_while_loop_counter =0
 supportList = []
@@ -61,13 +77,12 @@ def fetch_yandex_results(url=None):
         url = 'https://yandex.com/search/?text="pc+matic"+assist+number'
     
     #parsed html elements
-    soup =  get_soup(url)
-    # ul#search-result li
-    # li.serp-item.desktop-card
-    # a.OrganicTitle-Link title , link 
-    # div.Organic-ContentWrapper  caption
-    # a.link.link_theme_none.link_target_serp.pager__item.pager__item_kind_next.i-bem['href'] next-page
-    #div.pager__items a[-1]
+    try:
+        soup =  get_soup(url)
+    except Exception:
+        logger.exception(stack_info=True)
+        
+   
     items = soup.select("li.serp-item.desktop-card")
     for item in items:
         info ={
@@ -88,17 +103,17 @@ def fetch_yandex_results(url=None):
         filtered_data = df[ df['shady_score'] > 0 ]
     else:
         filtered_data = df
-        print('no dictionary items to add to csv')
+        logger.warning('no dictionary items to add to csv')
     #check if values after cleaning
     if len(filtered_data.index) > 0:
         if os.path.exists('supportLinkData.csv') and os.path.getsize('supportLinkData.csv') > 0:
             value1 = pd.read_csv('supportLinkData.csv') 
             values = [value1, filtered_data]
             pd.concat(values, ignore_index=True).drop_duplicates(subset=['link'],keep='first').to_csv('supportLinkData.csv',index=False)
-            print("writing to csv dictionary items")
+            logger.info("writing to csv dictionary items")
         else:
             filtered_data.to_csv('supportLinkData.csv',index=False)
-            print("writing to csv dictionary items")
+            logger.info("writing to csv dictionary items")
 
     newDict.clear()
     time.sleep(120)
@@ -109,18 +124,21 @@ def fetch_yandex_results(url=None):
    
     if next_page_link and page < 2:
         page += 1
-        print(f"page number {page} in if statement")
-        print(f"Going To next page")
+        parsed_url = urllib.parse.unquote_plus(urllib.parse.urlparse(url)[4])
+        logger.info(f'going to page: {page}, in {parsed_url}')
         fetch_yandex_results(next_page_link)
     
 
         
     while global_while_loop_counter < len(supportList) and global_while_loop_counter < 6:
-        print('in while loop')
+        
         page = 0
-        print(f"Searching next term: {suggestedLinks[global_while_loop_counter]}")
+        logger.info(f"Searching next term: {suggestedLinks[global_while_loop_counter]}")
         global_while_loop_counter += 1
-        fetch_yandex_results('https://yandex.com/search/?text=' + urllib.parse.quote_plus(suggestedLinks[global_while_loop_counter], safe="/"))
+        try:
+            fetch_yandex_results('https://yandex.com/search/?text=' + urllib.parse.quote_plus(suggestedLinks[global_while_loop_counter], safe="/"))
+        except Exception :
+            logger.exception(stack_info=True)
 
         
 
