@@ -60,8 +60,8 @@ def fetch_aol_results(url=None):
     try:
         r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
         soup = BeautifulSoup(r.text,'html.parser')
-    except Exception:
-        logger.exception(stack_info=True)
+    except :
+        logger.exception('exception occurred')
     #get related links
     related = soup.select('div.dd table.compTable tbody tr td')
     #get list of related urls to try
@@ -103,9 +103,9 @@ def fetch_aol_results(url=None):
             logger.info(wanted_url)
             newUrl = f'https://{wanted_url[0]}/'
             return newUrl
-        except Exception:
+        except:
             # newUrl = splitString
-            logger.exception(stack_info=True)
+            logger.exception('exception occurred')
             newUrl = string
             return newUrl
             
@@ -221,8 +221,8 @@ def fetch_aol_results(url=None):
         try:
             fetch_aol_results(url_base + urllib.parse.quote_plus(newList[global_while_loop_counter]))
         
-        except Exception:
-            logger.exception(stack_info=True)
+        except :
+            logger.exception('exception occurred')
           
     newList = []
         #suggestedlink scrap

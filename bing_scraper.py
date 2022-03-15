@@ -60,8 +60,8 @@ def fetch_bing_results(url=None):
         
         r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
         soup = BeautifulSoup(r.text,'html.parser')
-    except Exception:
-        logger.exception('Excepition raised', stack_info=True)
+    except:
+        logger.exception('exception occurred')
         
     
     
@@ -137,8 +137,8 @@ def fetch_bing_results(url=None):
                 values =[value2,df3]
                 try:
                     pd.concat(values, ignore_index=True).drop_duplicates(subset='link',inplace=True, keep='first').to_csv('peopelAlsoSearchedFor.csv',index=False)
-                except Exception:
-                    logger.exception(stack_info=True)            
+                except:
+                    logger.exception('exception occurred')            
             else:
                 df3.to_csv('peopelAlsoSearchedFor.csv',index=False)
            
@@ -187,8 +187,8 @@ def fetch_bing_results(url=None):
         try:
             fetch_bing_results('https://www.bing.com/search?q='+ urllib.parse.quote_plus(newList[global_while_loop_counter]))
         
-        except Exception :
-            logger.exception(f"exception Raised", stack_info=True)
+        except:
+            logger.exception('exception occurred')
         #suggestedlink scrap  
             break 
     newList =[]

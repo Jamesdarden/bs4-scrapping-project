@@ -79,8 +79,8 @@ def fetch_yandex_results(url=None):
     #parsed html elements
     try:
         soup =  get_soup(url)
-    except Exception:
-        logger.exception(stack_info=True)
+    except:
+        logger.exception('exception occurred')
         
    
     items = soup.select("li.serp-item.desktop-card")
@@ -137,8 +137,8 @@ def fetch_yandex_results(url=None):
         global_while_loop_counter += 1
         try:
             fetch_yandex_results('https://yandex.com/search/?text=' + urllib.parse.quote_plus(suggestedLinks[global_while_loop_counter], safe="/"))
-        except Exception :
-            logger.exception(stack_info=True)
+        except:
+            logger.exception('exception occurred')
 
         
 

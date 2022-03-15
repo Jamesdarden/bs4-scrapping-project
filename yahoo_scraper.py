@@ -60,8 +60,8 @@ def fetch_yahoo_results(url=None):
         
         r = requests.get('http://localhost:8050/render.html',params={'url':url,'wait':2}, headers=headers )
         soup = BeautifulSoup(r.text,'html.parser')
-    except Exception:
-        logger.exception(stack_info=True)
+    except:
+        logger.exception('exception occurred')
     #get related links
     related = soup.select('table tbody tr a')
     #get list of related urls to try
@@ -93,8 +93,8 @@ def fetch_yahoo_results(url=None):
         try:
             newUrl = f'https://www.{splitString[1]}'
             return newUrl
-        except Exception:
-            logger.exception(stack_info=True)
+        except:
+            logger.exception('exception occurred')
             # newUrl = splitString
             newUrl = string
             return newUrl
@@ -198,8 +198,8 @@ def fetch_yahoo_results(url=None):
         try:
             fetch_yahoo_results(url_base + urllib.parse.quote_plus(newList[global_while_loop_counter]))
         
-        except Exception:
-            logger.exception(stack_info=True)
+        except :
+            logger.exception('exception occurred')
             
     newList = []
         #suggestedlink scrap
