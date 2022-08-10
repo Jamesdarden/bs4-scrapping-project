@@ -1,7 +1,6 @@
 # bs4-scrapping-project
 
-this project uses beautiful soupe to scrape wearch engines for fake PC Matic support sites offering phone support.
+This project uses beautiful soupe to scrape search engines for fake PC Matic support sites offering phone support.
 
-the program grabs the link and text from the seach results and saves them in an csv sheet.
+The program first sends the request to  adocker splash image to render the javascript on the page then scraps the link and text from the seach results and then saves the data in pandas dataframe. That data frame is then given a shady score and then filtered into a csv file after.
 
-Once the data is grabed there is some data cleaning function to make sure the data is good 
